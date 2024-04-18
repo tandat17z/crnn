@@ -103,14 +103,16 @@ def val(net, data_loader, criterion, max_iter=1000):
 
     net.eval()
     
-    val_iter = iter(data_loader)
+    # val_iter = iter(data_loader)
 
     val_loss_avg = utils.averager()
     val_cer_avg = utils.averager()
-    max_iter = min(max_iter, len(data_loader))
+    # max_iter = min(max_iter, len(data_loader))
     with torch.no_grad():
-        for i in range(max_iter):
-            data = val_iter.next()
+        # for i in range(max_iter):
+        #     data = val_iter.next()
+        t = tqdm(iter(train_loader), total=len(train_loader), desc='Val epoch {}'.format(epoch))
+        for i, data in enumerate(t):
             cpu_images, cpu_texts = data
             batch_size = cpu_images.size(0)
             utils.loadData(image, cpu_images)
