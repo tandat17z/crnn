@@ -23,14 +23,14 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--root', required=True, help='path to root folder')
 parser.add_argument('--train', required=True, help='path to dataset')
 parser.add_argument('--val', required=True, help='path to dataset')
-parser.add_argument('--workers', type=int, help='number of data loading workers', default=4)
+parser.add_argument('--workers', type=int, help='number of data loading workers', default=2)
 parser.add_argument('--batch_size', type=int, default=64, help='input batch size')
-parser.add_argument('--imgH', type=int, default=32, help='the height of the input image to network')
-parser.add_argument('--imgW', type=int, default=512, help='the width of the input image to network')
+parser.add_argument('--imgH', type=int, default=48, help='the height of the input image to network')
+parser.add_argument('--imgW', type=int, default=520, help='the width of the input image to network')
 parser.add_argument('--nh', type=int, default=256, help='size of the lstm hidden state')
 parser.add_argument('--nepoch', type=int, default=100, help='number of epochs to train for')
 parser.add_argument('--cuda', action='store_true', help='enables cuda')
-parser.add_argument('--gpu', type=int, default=1, help='number of GPUs to use')
+parser.add_argument('--gpu', type=int, default=0, help='number of GPUs to use')
 parser.add_argument('--pretrained', default='', help="path to pretrained model (to continue training)")
 parser.add_argument('--alphabet', type=str, required=True, help='path to char in labels')
 parser.add_argument('--expr_dir', required=True, type=str, help='Where to store samples and models')
@@ -111,7 +111,7 @@ def val(net, data_loader, criterion, max_iter=1000):
     with torch.no_grad():
         # for i in range(max_iter):
         #     data = val_iter.next()
-        t = tqdm(iter(train_loader), total=len(train_loader), desc='Val epoch {}'.format(epoch))
+        t = tqdm(iter(data_loader), total=len(data_loader), desc='Val epoch')
         for i, data in enumerate(t):
             cpu_images, cpu_texts = data
             batch_size = cpu_images.size(0)
@@ -122,7 +122,7 @@ def val(net, data_loader, criterion, max_iter=1000):
 
             preds = crnn(image)
             preds_size = Variable(torch.IntTensor([preds.size(0)] * batch_size))
-            cost = criterion(preds, text, preds_size, length)/batch_size
+            cost = criterion(preds.log_softmax(2), text, preds_size, length) # thay log_softmax
             cost = cost.detach().item()
             val_loss_avg.add(cost)
 
@@ -150,7 +150,7 @@ def trainBatch(net, data, criterion, optimizer):
     
     preds = crnn(image)
     preds_size = Variable(torch.IntTensor([preds.size(0)] * batch_size))
-    cost = criterion(preds, text, preds_size, length)/batch_size
+    cost = criterion(preds.log_softmax(2), text, preds_size, length)
     crnn.zero_grad()
     cost.backward()
     optimizer.step()
